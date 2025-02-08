@@ -30,6 +30,8 @@ func Start(serverlog *log.Logger) error {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/ping", Chain(ping, logger(serverlog)))
+	mux.HandleFunc("/api/v1/upload", upload)
+	mux.HandleFunc("/api/v1/stream", stream)
 
 	err := http.ListenAndServe(":9090", mux)
 	if err != nil {
