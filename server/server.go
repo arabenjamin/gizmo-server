@@ -3,6 +3,8 @@ package server
 import (
 	"log"
 	"net/http"
+
+	"github.com/hybridgroup/mjpeg"
 )
 
 type Middleware func(http.HandlerFunc) http.HandlerFunc
@@ -28,10 +30,12 @@ func Chain(f http.HandlerFunc, middlewares ...Middleware) http.HandlerFunc {
 
 func Start(serverlog *log.Logger) error {
 
+	stream := mjpeg.NewStream()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/ping", Chain(ping, logger(serverlog)))
-	mux.HandleFunc("/api/v1/upload", upload)
-	mux.HandleFunc("/api/v1/stream", stream)
+	mux.HandleFunc("/api/v1/upload", makeUploadHandler(stream))
+	mux.Handle("/api/v1/stream", stream)
 
 	err := http.ListenAndServe(":9090", mux)
 	if err != nil {
