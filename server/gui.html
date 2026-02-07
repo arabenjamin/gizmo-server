@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gizmatron Control Panel</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0; min-height: 100vh; }
+  .header { background: #16213e; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #0f3460; }
+  .header h1 { font-size: 1.4em; color: #e94560; }
+  .conn-status { display: flex; align-items: center; gap: 8px; font-size: 0.9em; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #555; }
+  .dot.ok { background: #4ecca3; }
+  .dot.err { background: #e94560; }
+  .main { display: grid; grid-template-columns: 1fr 340px; gap: 16px; padding: 16px; max-width: 1200px; margin: 0 auto; }
+  .panel { background: #16213e; border-radius: 8px; padding: 16px; border: 1px solid #0f3460; }
+  .panel h2 { font-size: 1em; color: #4ecca3; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  .video-wrap { background: #000; border-radius: 4px; overflow: hidden; position: relative; aspect-ratio: 4/3; }
+  .video-wrap img { width: 100%; height: 100%; object-fit: contain; }
+  .no-signal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #555; font-size: 1.2em; }
+  .device-card { background: #1a1a2e; border-radius: 4px; padding: 10px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .device-card .name { font-weight: 600; font-size: 0.9em; }
+  .device-card .badge { font-size: 0.75em; padding: 2px 8px; border-radius: 10px; }
+  .badge.op { background: #1b4332; color: #4ecca3; }
+  .badge.nop { background: #3d0000; color: #e94560; }
+  .badge.run { background: #1b3a4b; color: #48cae4; }
+  .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .controls.full { grid-column: 1 / -1; }
+  .btn { padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85em; transition: opacity 0.2s; }
+  .btn:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-green { background: #4ecca3; color: #1a1a2e; }
+  .btn-red { background: #e94560; color: #fff; }
+  .btn-blue { background: #48cae4; color: #1a1a2e; }
+  .btn-orange { background: #e9a045; color: #1a1a2e; }
+  .slider-group { margin-bottom: 10px; }
+  .slider-group label { display: flex; justify-content: space-between; font-size: 0.85em; margin-bottom: 4px; }
+  .slider-group input[type=range] { width: 100%; accent-color: #4ecca3; }
+  .log-area { background: #0d1117; border-radius: 4px; padding: 8px; height: 160px; overflow-y: auto; font-family: monospace; font-size: 0.78em; line-height: 1.5; }
+  .log-area .entry { color: #8b949e; }
+  .log-area .entry .ts { color: #4ecca3; }
+  .log-area .entry.err { color: #e94560; }
+  .bottom { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .face-row { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+  .toggle { position: relative; width: 44px; height: 24px; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle .slider { position: absolute; inset: 0; background: #333; border-radius: 12px; cursor: pointer; transition: background 0.3s; }
+  .toggle .slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; bottom: 3px; background: #ccc; border-radius: 50%; transition: transform 0.3s; }
+  .toggle input:checked + .slider { background: #4ecca3; }
+  .toggle input:checked + .slider::before { transform: translateX(20px); }
+  .info-val { font-size: 0.85em; color: #8b949e; }
+  @media (max-width: 768px) { .main { grid-template-columns: 1fr; } .bottom { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Gizmatron Control Panel</h1>
+  <div class="conn-status">
+    <span id="connLabel">Disconnected</span>
+    <span class="dot" id="connDot"></span>
+  </div>
+</div>
+
+<div class="main">
+  <!-- Left Column -->
+  <div>
+    <div class="panel">
+      <h2>Camera Feed</h2>
+      <div class="video-wrap">
+        <div class="no-signal" id="noSignal">No Signal</div>
+        <img id="videoFeed" src="/api/v1/stream" style="display:none" alt="Video Feed">
+      </div>
+      <div class="face-row">
+        <label class="toggle">
+          <input type="checkbox" id="faceToggle">
+          <span class="slider"></span>
+        </label>
+        <span>Face Detection</span>
+        <span class="info-val" id="faceInfo">Off</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column -->
+  <div>
+    <div class="panel">
+      <h2>Robot Status</h2>
+      <div class="device-card">
+        <span class="name" id="botName">Gizmatron</span>
+        <div>
+          <span class="badge nop" id="botOpBadge">Unknown</span>
+          <span class="badge nop" id="botRunBadge">Stopped</span>
+        </div>
+      </div>
+      <div id="deviceList"></div>
+    </div>
+
+    <div class="panel" style="margin-top:12px">
+      <h2>Controls</h2>
+      <div class="controls">
+        <button class="btn btn-green" id="btnStartBot">Start Robot</button>
+        <button class="btn btn-red" id="btnStopBot">Stop Robot</button>
+        <button class="btn btn-blue" id="btnStartCam">Start Camera</button>
+        <button class="btn btn-orange" id="btnStopCam">Stop Camera</button>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:12px">
+      <h2>Arm Control</h2>
+      <div class="slider-group">
+        <label><span>X</span><span id="xVal">5.0</span></label>
+        <input type="range" id="sliderX" min="-20" max="20" step="0.5" value="5">
+      </div>
+      <div class="slider-group">
+        <label><span>Y</span><span id="yVal">5.0</span></label>
+        <input type="range" id="sliderY" min="-20" max="20" step="0.5" value="5">
+      </div>
+      <div class="slider-group">
+        <label><span>Z</span><span id="zVal">10.0</span></label>
+        <input type="range" id="sliderZ" min="0" max="30" step="0.5" value="10">
+      </div>
+      <div class="slider-group">
+        <label><span>Speed (ms)</span><span id="speedVal">20</span></label>
+        <input type="range" id="sliderSpeed" min="5" max="100" step="1" value="20">
+      </div>
+      <button class="btn btn-blue" id="btnMoveArm" style="width:100%">Move Arm</button>
+    </div>
+  </div>
+
+  <!-- Bottom -->
+  <div class="bottom">
+    <div class="panel">
+      <h2>Event Log</h2>
+      <div class="log-area" id="logArea"></div>
+    </div>
+    <div class="panel">
+      <h2>Vision Info</h2>
+      <div class="device-card">
+        <span class="name">Vision Running</span>
+        <span class="badge nop" id="visionRunBadge">No</span>
+      </div>
+      <div class="device-card">
+        <span class="name">Face Detection</span>
+        <span class="badge nop" id="faceDetBadge">Off</span>
+      </div>
+      <div class="device-card">
+        <span class="name">Last Detection</span>
+        <span class="info-val" id="lastDetection">N/A</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const logArea = document.getElementById('logArea');
+  const MAX_LOG = 50;
+  let logCount = 0;
+
+  function addLog(msg, isErr) {
+    const ts = new Date().toLocaleTimeString();
+    const div = document.createElement('div');
+    div.className = 'entry' + (isErr ? ' err' : '');
+    div.innerHTML = '<span class="ts">[' + ts + ']</span> ' + msg;
+    logArea.appendChild(div);
+    logCount++;
+    if (logCount > MAX_LOG) { logArea.removeChild(logArea.firstChild); logCount--; }
+    logArea.scrollTop = logArea.scrollHeight;
+  }
+
+  // Connection ping
+  function checkConnection() {
+    fetch('/api/v1/robot/ping').then(r => {
+      if (r.ok) {
+        document.getElementById('connDot').className = 'dot ok';
+        document.getElementById('connLabel').textContent = 'Connected';
+      } else { throw new Error('not ok'); }
+    }).catch(() => {
+      document.getElementById('connDot').className = 'dot err';
+      document.getElementById('connLabel').textContent = 'Disconnected';
+    });
+  }
+  setInterval(checkConnection, 5000);
+  checkConnection();
+
+  // Poll robot status
+  function pollStatus() {
+    fetch('/api/v1/robot/bot-status').then(r => r.json()).then(data => {
+      document.getElementById('botName').textContent = data.botname || 'Gizmatron';
+
+      const isOp = data.status && data.status.includes('Operational: true');
+      const isRun = data.status && data.status.includes('Running: true');
+      const opBadge = document.getElementById('botOpBadge');
+      opBadge.textContent = isOp ? 'Operational' : 'Not Operational';
+      opBadge.className = 'badge ' + (isOp ? 'op' : 'nop');
+      const runBadge = document.getElementById('botRunBadge');
+      runBadge.textContent = isRun ? 'Running' : 'Stopped';
+      runBadge.className = 'badge ' + (isRun ? 'run' : 'nop');
+
+      // Devices
+      const dl = document.getElementById('deviceList');
+      dl.innerHTML = '';
+      if (data.device_status) {
+        for (const [key, dev] of Object.entries(data.device_status)) {
+          const card = document.createElement('div');
+          card.className = 'device-card';
+          const opText = dev.IsOperational ? 'OK' : 'N/A';
+          const opClass = dev.IsOperational ? 'op' : 'nop';
+          card.innerHTML = '<span class="name">' + (dev.Name || key) + '</span><span class="badge ' + opClass + '">' + opText + '</span>';
+          dl.appendChild(card);
+        }
+      }
+
+      // Vision info
+      if (data.vision_running !== undefined) {
+        const vb = document.getElementById('visionRunBadge');
+        vb.textContent = data.vision_running ? 'Yes' : 'No';
+        vb.className = 'badge ' + (data.vision_running ? 'op' : 'nop');
+      }
+      if (data.face_detection_enabled !== undefined) {
+        const fb = document.getElementById('faceDetBadge');
+        fb.textContent = data.face_detection_enabled ? 'On' : 'Off';
+        fb.className = 'badge ' + (data.face_detection_enabled ? 'op' : 'nop');
+        document.getElementById('faceToggle').checked = data.face_detection_enabled;
+        document.getElementById('faceInfo').textContent = data.face_detection_enabled ? 'On' : 'Off';
+      }
+      if (data.last_detection_count > 0 && data.last_detection_time) {
+        document.getElementById('lastDetection').textContent = data.last_detection_count + ' faces @ ' + new Date(data.last_detection_time).toLocaleTimeString();
+      }
+    }).catch(() => {});
+  }
+  setInterval(pollStatus, 2000);
+  pollStatus();
+
+  // Video feed
+  const videoFeed = document.getElementById('videoFeed');
+  const noSignal = document.getElementById('noSignal');
+  videoFeed.onload = function() { videoFeed.style.display = 'block'; noSignal.style.display = 'none'; };
+  videoFeed.onerror = function() { videoFeed.style.display = 'none'; noSignal.style.display = 'flex'; };
+
+  // API call helper
+  function apiCall(path, method, body) {
+    const opts = { method: method || 'POST' };
+    if (body) { opts.headers = {'Content-Type':'application/json'}; opts.body = JSON.stringify(body); }
+    return fetch('/api/v1/robot/' + path, opts).then(r => r.json()).then(data => {
+      addLog(path + ': ' + (data.status || 'ok'));
+      pollStatus();
+      return data;
+    }).catch(err => {
+      addLog(path + ': ' + err.message, true);
+    });
+  }
+
+  // Control buttons
+  document.getElementById('btnStartBot').onclick = () => apiCall('bot-start', 'POST');
+  document.getElementById('btnStopBot').onclick = () => apiCall('bot-stop', 'POST');
+  document.getElementById('btnStartCam').onclick = () => apiCall('start/stream', 'POST');
+  document.getElementById('btnStopCam').onclick = () => apiCall('stop/stream', 'POST');
+
+  // Face detection toggle
+  document.getElementById('faceToggle').onchange = function() {
+    apiCall('detectfaces', 'POST', { enable: this.checked });
+  };
+
+  // Sliders
+  ['X','Y','Z'].forEach(axis => {
+    const sl = document.getElementById('slider' + axis);
+    sl.oninput = () => { document.getElementById(axis.toLowerCase() + 'Val').textContent = sl.value; };
+  });
+  document.getElementById('sliderSpeed').oninput = function() {
+    document.getElementById('speedVal').textContent = this.value;
+  };
+
+  // Move arm
+  document.getElementById('btnMoveArm').onclick = () => {
+    apiCall('bot-move', 'POST', {
+      x: parseFloat(document.getElementById('sliderX').value),
+      y: parseFloat(document.getElementById('sliderY').value),
+      z: parseFloat(document.getElementById('sliderZ').value),
+      speed: parseInt(document.getElementById('sliderSpeed').value)
+    });
+  };
+
+  addLog('GUI loaded. Polling robot status...');
+})();
+</script>
+</body>
+</html>

@@ -12,8 +12,13 @@ func main() {
 	serverlog := log.New(os.Stdout, "http: ", log.LstdFlags)
 	log.Println("Starting Gizmo Server")
 
-	serverlog.Println("Starting Gizmo Server")
-	err := server.Start(serverlog)
+	robotURL := os.Getenv("GIZMATRON_URL")
+	if robotURL == "" {
+		robotURL = "http://localhost:8080"
+	}
+
+	serverlog.Printf("Starting Gizmo Server (robot URL: %s)", robotURL)
+	err := server.Start(serverlog, robotURL)
 	if err != nil {
 		serverlog.Println("Critical error starting Gizmo Server")
 		serverlog.Println(err)

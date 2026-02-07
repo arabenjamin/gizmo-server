@@ -28,7 +28,7 @@ func Chain(f http.HandlerFunc, middlewares ...Middleware) http.HandlerFunc {
 	return f
 }
 
-func Start(serverlog *log.Logger) error {
+func Start(serverlog *log.Logger, robotURL string) error {
 
 	stream := mjpeg.NewStream()
 
@@ -37,6 +37,11 @@ func Start(serverlog *log.Logger) error {
 	mux.HandleFunc("/api/v1/upload", makeUploadHandler(stream))
 	mux.Handle("/api/v1/stream", stream)
 
+	// GUI and robot proxy routes
+	mux.HandleFunc("/api/v1/robot/", makeProxyHandler(robotURL, serverlog))
+	mux.HandleFunc("/", serveGUI)
+
+	serverlog.Printf("Robot proxy target: %s", robotURL)
 	err := http.ListenAndServe(":9090", mux)
 	if err != nil {
 
