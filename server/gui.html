@@ -7,41 +7,51 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0; min-height: 100vh; }
-  .header { background: #16213e; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #0f3460; }
+  .header { background: #16213e; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #0f3460; gap: 12px; flex-wrap: wrap; }
   .header h1 { font-size: 1.4em; color: #e94560; }
   .conn-status { display: flex; align-items: center; gap: 8px; font-size: 0.9em; }
   .dot { width: 10px; height: 10px; border-radius: 50%; background: #555; }
   .dot.ok { background: #4ecca3; }
   .dot.err { background: #e94560; }
   .main { display: grid; grid-template-columns: 1fr 340px; gap: 16px; padding: 16px; max-width: 1200px; margin: 0 auto; }
-  .panel { background: #16213e; border-radius: 8px; padding: 16px; border: 1px solid #0f3460; height: 100%; }
+  @media (max-width: 860px) { .main { grid-template-columns: 1fr; } }
+  .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .panel { background: #16213e; border-radius: 8px; padding: 16px; border: 1px solid #0f3460; }
   .panel h2 { font-size: 1em; color: #4ecca3; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
   .video-wrap { background: #000; border-radius: 4px; overflow: hidden; position: relative; aspect-ratio: 4/3; }
   .video-wrap img { width: 100%; height: 100%; object-fit: contain; }
-  .no-signal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #555; font-size: 1.2em; }
-  .device-card { background: #1a1a2e; border-radius: 4px; padding: 10px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-  .device-card .name { font-weight: 600; font-size: 0.9em; }
-  .device-card .badge { font-size: 0.75em; padding: 2px 8px; border-radius: 10px; }
+  .no-signal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #777; font-size: 1.1em; text-align: center; padding: 16px; }
+  .telemetry { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; font-family: monospace; font-size: 0.8em; color: #9aa; }
+  .device-card { background: #1a1a2e; border-radius: 4px; padding: 8px 12px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+  .device-card .name { font-weight: 600; font-size: 0.85em; }
+  .badge { font-size: 0.75em; padding: 2px 8px; border-radius: 10px; }
   .badge.op { background: #1b4332; color: #4ecca3; }
   .badge.nop { background: #3d0000; color: #e94560; }
-  .badge.run { background: #1b3a4b; color: #48cae4; }
-  .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .btn { padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85em; transition: opacity 0.2s; }
   .btn:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
   .btn-green { background: #4ecca3; color: #1a1a2e; }
   .btn-red { background: #e94560; color: #fff; }
   .btn-blue { background: #48cae4; color: #1a1a2e; }
   .btn-orange { background: #e9a045; color: #1a1a2e; }
+  .btn-ghost { background: transparent; color: #e0e0e0; border: 1px solid #0f3460; }
+  .holder { font-size: 0.9em; line-height: 1.5; margin-bottom: 10px; }
+  .holder strong { color: #fff; }
+  .note { font-size: 0.8em; color: #e9a045; margin-top: 8px; min-height: 1em; }
+  .toggle { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; font-size: 0.9em; }
+  .toggle input { width: 18px; height: 18px; accent-color: #4ecca3; }
   .slider-group { margin-bottom: 10px; }
   .slider-group label { display: flex; justify-content: space-between; font-size: 0.85em; margin-bottom: 4px; }
   .slider-group input[type=range] { width: 100%; accent-color: #4ecca3; }
   .log-area { background: #0d1117; border-radius: 4px; padding: 8px; height: 120px; overflow-y: auto; font-family: monospace; font-size: 0.78em; border: 1px solid #0f3460; }
-  .chat-area { background: #0d1117; border-radius: 4px; padding: 8px; height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-size: 0.85em; border: 1px solid #0f3460; }
+  .log-area .err { color: #e94560; }
+  .chat-area { background: #0d1117; border-radius: 4px; padding: 8px; height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-size: 0.85em; border: 1px solid #0f3460; }
   .chat-msg { padding: 6px 10px; border-radius: 6px; max-width: 90%; line-height: 1.4; }
   .chat-msg.user { background: #0f3460; align-self: flex-end; color: #fff; }
   .chat-msg.brain { background: #16213e; align-self: flex-start; border: 1px solid #4ecca3; color: #e0e0e0; }
   .chat-input-wrap { display: flex; gap: 6px; margin-top: 8px; }
-  .chat-input { flex: 1; background: #1a1a2e; border: 1px solid #0f3460; color: #fff; padding: 10px 12px; border-radius: 4px; outline: none; font-size: 0.85em; }
+  .chat-input { flex: 1; min-width: 0; background: #1a1a2e; border: 1px solid #0f3460; color: #fff; padding: 10px 12px; border-radius: 4px; outline: none; font-size: 0.85em; }
 </style>
 </head>
 <body>
@@ -54,13 +64,19 @@
 </div>
 
 <div class="main">
-  <!-- Left: Feed & Brain -->
-  <div style="display: flex; flex-direction: column; gap: 16px;">
+  <div class="col">
     <div class="panel">
-      <h2>Camera Feed</h2>
+      <h2>Camera</h2>
       <div class="video-wrap">
-        <div class="no-signal" id="noSignal">No Signal</div>
-        <img id="videoFeed" src="/api/v1/stream" style="display:none" alt="Video Feed">
+        <div class="no-signal" id="noSignal">No signal</div>
+        <img id="videoFeed" src="/api/v1/stream" alt="Camera feed">
+      </div>
+      <div class="telemetry">
+        <span id="tFps">— fps</span>
+        <span id="tPose">pan — tilt —</span>
+        <span id="tFaces">faces —</span>
+        <span id="tDetect">detect — ms</span>
+        <span id="tMode">mode —</span>
       </div>
     </div>
     <div class="panel">
@@ -68,42 +84,48 @@
       <div class="chat-area" id="chatArea"></div>
       <div class="chat-input-wrap">
         <input type="text" class="chat-input" id="chatInput" placeholder="Ask the brain to move the robot or search knowledge...">
-        <button class="btn btn-green" id="btnSendChat" style="padding: 10px 16px;">Send</button>
+        <button class="btn btn-green" id="btnSendChat">Send</button>
       </div>
     </div>
   </div>
 
-  <!-- Right: Status & Controls -->
-  <div style="display: flex; flex-direction: column; gap: 16px;">
+  <div class="col">
     <div class="panel">
-      <h2>Robot Status</h2>
-      <div class="device-card">
-        <span class="name" id="botName">Gizmatron</span>
-        <div>
-          <span class="badge nop" id="botOpBadge">Offline</span>
-          <span class="badge nop" id="botRunBadge">Stopped</span>
-        </div>
+      <h2>Control</h2>
+      <div class="holder" id="holderText">Checking who has control…</div>
+      <div class="grid2">
+        <button class="btn btn-green" id="btnTake">Take control</button>
+        <button class="btn btn-ghost" id="btnRelease">Release</button>
       </div>
-      <div id="deviceList"></div>
+      <div class="note" id="controlNote"></div>
     </div>
 
     <div class="panel">
-      <h2>Controls</h2>
-      <div class="controls">
-        <button class="btn btn-green" id="btnStartBot">Start Bot</button>
-        <button class="btn btn-red" id="btnStopBot">Stop Bot</button>
-        <button class="btn btn-blue" id="btnStartCam">Start Cam</button>
-        <button class="btn btn-orange" id="btnStopCam">Stop Cam</button>
+      <h2>Behaviours</h2>
+      <label class="toggle"><span>Track faces</span><input type="checkbox" id="chkTrack"></label>
+      <label class="toggle"><span>Scan when nobody is in view</span><input type="checkbox" id="chkScan"></label>
+    </div>
+
+    <div class="panel">
+      <h2>Head</h2>
+      <div class="slider-group"><label><span>Pan</span><span id="panVal">0</span></label><input type="range" id="sliderPan" min="-90" max="90" step="1" value="0"></div>
+      <div class="slider-group"><label><span>Tilt</span><span id="tiltVal">0</span></label><input type="range" id="sliderTilt" min="-60" max="50" step="1" value="0"></div>
+      <div class="slider-group"><label><span>Speed (ms/°)</span><span id="speedVal">20</span></label><input type="range" id="sliderSpeed" min="5" max="100" step="1" value="20"></div>
+      <div class="grid2">
+        <button class="btn btn-blue" id="btnLook">Aim</button>
+        <button class="btn btn-ghost" id="btnCentre">Centre</button>
       </div>
     </div>
 
     <div class="panel">
-      <h2>Arm Control</h2>
-      <div class="slider-group"><label><span>X</span><span id="xVal">5.0</span></label><input type="range" id="sliderX" min="-20" max="20" step="0.5" value="5"></div>
-      <div class="slider-group"><label><span>Y</span><span id="yVal">5.0</span></label><input type="range" id="sliderY" min="-20" max="20" step="0.5" value="5"></div>
-      <div class="slider-group"><label><span>Z</span><span id="zVal">10.0</span></label><input type="range" id="sliderZ" min="0" max="30" step="0.5" value="10"></div>
-      <div class="slider-group"><label><span>Speed</span><span id="speedVal">20</span></label><input type="range" id="sliderSpeed" min="5" max="100" step="1" value="20"></div>
-      <button class="btn btn-blue" id="btnMoveArm" style="width:100%">Move Arm</button>
+      <h2>Robot</h2>
+      <div class="grid2">
+        <button class="btn btn-green" id="btnStartBot">Start bot</button>
+        <button class="btn btn-red" id="btnStopBot">Stop bot</button>
+        <button class="btn btn-blue" id="btnStartCam">Start cam</button>
+        <button class="btn btn-orange" id="btnStopCam">Stop cam</button>
+      </div>
+      <div id="deviceList" style="margin-top:12px"></div>
     </div>
 
     <div class="panel">
@@ -115,25 +137,150 @@
 
 <script>
 (function() {
-  const logArea = document.getElementById('logArea');
-  const chatArea = document.getElementById('chatArea');
-  const chatInput = document.getElementById('chatInput');
-  let sessionId = null;
+  const $ = id => document.getElementById(id);
+  const logArea = $('logArea'), chatArea = $('chatArea'), chatInput = $('chatInput');
+  let state = null, sessionId = null, lastActivitySent = 0;
 
-  function addLog(msg, isErr) { 
-    const ts = new Date().toLocaleTimeString();
+  function addLog(msg, isErr) {
     const div = document.createElement('div');
-    div.className = 'entry' + (isErr ? ' err' : '');
-    div.innerHTML = '<span style="color:#4ecca3">[' + ts + ']</span> ' + msg;
+    if (isErr) div.className = 'err';
+    div.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
     logArea.appendChild(div); logArea.scrollTop = logArea.scrollHeight;
   }
 
+  async function post(path, body, method) {
+    const res = await fetch(path, {
+      method: method || 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body)
+    });
+    let data = {};
+    try { data = await res.json(); } catch (e) {}
+    if (!res.ok) throw new Error(data.error || data.message || ('HTTP ' + res.status));
+    return data;
+  }
+
+  // Robot commands go through gizmo-server, which adds our control token.
+  async function robot(path, body) {
+    try {
+      const d = await post('/api/v1/robot/' + path, body);
+      addLog(path + ': ' + (d.status || 'ok'));
+      return d;
+    } catch (e) { addLog(path + ': ' + e.message, true); }
+  }
+
+  function esc(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
+
+  // ---- state ----
+  function render() {
+    const s = state; if (!s) return;
+    const live = s.connected;
+    $('noSignal').style.display = live ? 'none' : 'flex';
+    $('noSignal').textContent = s.stream_err ? 'No signal — ' + s.stream_err : 'No signal';
+    $('tFps').textContent = (s.fps || 0).toFixed(1) + ' fps';
+    const f = s.frame || {};
+    $('tPose').textContent = 'pan ' + (f.pan || 0).toFixed(1) + '° tilt ' + (f.tilt || 0).toFixed(1) + '°' + (f.moving ? ' (moving)' : '');
+    $('tFaces').textContent = 'faces ' + (s.faces || []).length;
+    $('tDetect').textContent = 'detect ' + (s.detect_ms || 0).toFixed(0) + ' ms';
+    $('tMode').textContent = 'mode ' + (s.mode || 'idle');
+
+    const c = s.control || {};
+    let text;
+    if (s.control_err) text = 'Robot unreachable: ' + esc(s.control_err);
+    else if (s.you_control) text = '<strong>You</strong> are in control' + (c.expires_in_seconds ? ' <span style="color:#9aa">(lapses after ' + c.expires_in_seconds + 's idle)</span>' : '') + '.';
+    else if (c.held) text = '<strong>' + esc(c.holder) + '</strong> (' + esc(c.class) + ') is in control.';
+    else text = 'Nobody is in control. Agents may take it.';
+    $('holderText').innerHTML = text;
+
+    const otherHuman = c.held && !s.you_control && c.class === 'human';
+    $('btnTake').textContent = otherHuman ? 'Force take over' : (s.you_control ? 'In control' : 'Take control');
+    $('btnTake').disabled = !!s.you_control;
+    $('btnTake').className = 'btn ' + (otherHuman ? 'btn-orange' : 'btn-green');
+    $('btnRelease').disabled = !s.you_control;
+    $('controlNote').textContent = s.lost_reason ? 'Control ended: ' + s.lost_reason : '';
+
+    for (const id of ['chkTrack', 'chkScan', 'btnLook', 'btnCentre', 'btnStartBot', 'btnStopBot', 'btnStopCam'])
+      $(id).disabled = !s.you_control;
+    $('chkTrack').checked = !!s.tracking;
+    $('chkScan').checked = !!s.scan;
+
+    $('connDot').className = 'dot ' + (live ? 'ok' : 'err');
+    $('connLabel').textContent = live ? 'Robot connected' : 'Robot not streaming';
+  }
+
+  async function poll() {
+    try { state = await (await fetch('/api/v1/state')).json(); render(); }
+    catch (e) { $('connDot').className = 'dot err'; $('connLabel').textContent = 'gizmo-server unreachable'; }
+  }
+  setInterval(poll, 1000); poll();
+
+  async function pollDevices() {
+    try {
+      const d = await (await fetch('/api/v1/robot/bot-status')).json();
+      const dl = $('deviceList'); dl.innerHTML = '';
+      Object.entries(d.device_status || {}).forEach(([key, dev]) => {
+        const card = document.createElement('div'); card.className = 'device-card';
+        card.innerHTML = '<span class="name">' + esc(dev.Name || key) + '</span><span class="badge ' +
+          (dev.IsOperational ? 'op' : 'nop') + '">' + esc(dev.Status) + '</span>';
+        dl.appendChild(card);
+      });
+    } catch (e) {}
+  }
+  setInterval(pollDevices, 5000); pollDevices();
+
+  // ---- control ----
+  $('btnTake').onclick = async () => {
+    const c = (state && state.control) || {};
+    const force = c.held && c.class === 'human' && !state.you_control;
+    if (force && !confirm('Another person (' + c.holder + ') is driving. Take over anyway?')) return;
+    try { state = await post('/api/v1/control', { force }); render(); addLog('took control'); }
+    catch (e) { addLog('take control: ' + e.message, true); }
+  };
+  $('btnRelease').onclick = async () => {
+    try { state = await post('/api/v1/control', undefined, 'DELETE'); render(); addLog('released control'); }
+    catch (e) { addLog('release: ' + e.message, true); }
+  };
+
+  // Keep our lease alive while the operator is actually here.
+  function activity() {
+    if (!state || !state.you_control || document.hidden) return;
+    const now = Date.now();
+    if (now - lastActivitySent < 15000) return;
+    lastActivitySent = now;
+    fetch('/api/v1/activity', { method: 'POST' });
+  }
+  ['pointerdown', 'pointermove', 'keydown', 'wheel'].forEach(ev => document.addEventListener(ev, activity, { passive: true }));
+
+  // ---- behaviours ----
+  async function behavior(body) {
+    try { state = await post('/api/v1/behavior', body); render(); addLog('behaviour: ' + JSON.stringify(body)); }
+    catch (e) { addLog('behaviour: ' + e.message, true); poll(); }
+  }
+  $('chkTrack').onchange = e => behavior({ tracking: e.target.checked });
+  $('chkScan').onchange = e => behavior({ scan: e.target.checked });
+
+  // ---- head ----
+  for (const [s, v] of [['sliderPan', 'panVal'], ['sliderTilt', 'tiltVal'], ['sliderSpeed', 'speedVal']])
+    $(s).oninput = () => { $(v).textContent = $(s).value; };
+  const speed = () => parseInt($('sliderSpeed').value);
+  $('btnLook').onclick = () => robot('look', { pan: parseFloat($('sliderPan').value), tilt: parseFloat($('sliderTilt').value), speed: speed() });
+  $('btnCentre').onclick = () => {
+    $('sliderPan').value = 0; $('sliderTilt').value = 0; $('panVal').textContent = 0; $('tiltVal').textContent = 0;
+    robot('look', { pan: 0, tilt: 0, speed: speed() });
+  };
+
+  // ---- robot ----
+  $('btnStartBot').onclick = () => robot('bot-start');
+  $('btnStopBot').onclick = () => robot('bot-stop');
+  $('btnStartCam').onclick = () => robot('start/stream');
+  $('btnStopCam').onclick = () => robot('stop/stream');
+
+  // ---- brain chat ----
   function addChat(text, isUser) {
     const div = document.createElement('div');
     div.className = 'chat-msg ' + (isUser ? 'user' : 'brain');
     div.textContent = text; chatArea.appendChild(div); chatArea.scrollTop = chatArea.scrollHeight;
   }
-
   async function brainReq(method, params) {
     const headers = { 'Content-Type': 'application/json', 'mcp-protocol-version': '2024-11-05' };
     if (sessionId) headers['mcp-session-id'] = sessionId;
@@ -145,70 +292,6 @@
     if (sid) sessionId = sid;
     return res.json();
   }
-
-  async function apiCall(path, method, body) {
-    const opts = { method: method || 'POST' };
-    if (body) { opts.headers = {'Content-Type':'application/json'}; opts.body = JSON.stringify(body); }
-    return fetch('/api/v1/robot/' + path, opts).then(r => r.json()).then(data => {
-      addLog(path + ': ' + (data.status || 'ok')); return data;
-    }).catch(err => { addLog(path + ': ' + err.message, true); });
-  }
-
-  function pollStatus() {
-    fetch('/api/v1/robot/bot-status').then(r => r.json()).then(data => {
-      if (data.botname) document.getElementById('botName').textContent = data.botname;
-      
-      const opBadge = document.getElementById('botOpBadge');
-      const isOp = data.status && data.status.includes('Operational: true');
-      opBadge.textContent = isOp ? 'Operational' : 'Not Operational';
-      opBadge.className = 'badge ' + (isOp ? 'op' : 'nop');
-
-      const runBadge = document.getElementById('botRunBadge');
-      const isRun = data.status && data.status.includes('Running: true');
-      runBadge.textContent = isRun ? 'Running' : 'Stopped';
-      runBadge.className = 'badge ' + (isRun ? 'run' : 'nop');
-
-      // Devices
-      const dl = document.getElementById('deviceList');
-      dl.innerHTML = '';
-      if (data.device_status) {
-        Object.entries(data.device_status).forEach(([key, dev]) => {
-          const card = document.createElement('div');
-          card.className = 'device-card';
-          const opClass = dev.IsOperational ? 'op' : 'nop';
-          card.innerHTML = `<span class="name">${dev.Name || key}</span><span class="badge ${opClass}">${dev.Status}</span>`;
-          dl.appendChild(card);
-        });
-      }
-    }).catch(e => { addLog('Poll failed: ' + e.message, true); });
-  }
-  setInterval(pollStatus, 2000);
-
-  // Control buttons
-  document.getElementById('btnStartBot').onclick = () => apiCall('bot-start');
-  document.getElementById('btnStopBot').onclick = () => apiCall('bot-stop');
-  document.getElementById('btnStartCam').onclick = () => apiCall('start/stream');
-  document.getElementById('btnStopCam').onclick = () => apiCall('stop/stream');
-
-  // Sliders
-  ['X','Y','Z'].forEach(axis => {
-    const sl = document.getElementById('slider' + axis);
-    sl.oninput = () => { document.getElementById(axis.toLowerCase() + 'Val').textContent = sl.value; };
-  });
-  document.getElementById('sliderSpeed').oninput = function() {
-    document.getElementById('speedVal').textContent = this.value;
-  };
-
-  // Move arm
-  document.getElementById('btnMoveArm').onclick = () => {
-    apiCall('bot-move', 'POST', {
-      x: parseFloat(document.getElementById('sliderX').value),
-      y: parseFloat(document.getElementById('sliderY').value),
-      z: parseFloat(document.getElementById('sliderZ').value),
-      speed: parseInt(document.getElementById('sliderSpeed').value)
-    });
-  };
-
   async function handleChat() {
     const text = chatInput.value.trim(); if (!text) return;
     addChat(text, true); chatInput.value = '';
@@ -218,31 +301,19 @@
       addChat(reply || 'I don\'t know about that yet.', false);
     } catch (e) { addChat('Error: ' + e.message, false); }
   }
-  document.getElementById('btnSendChat').onclick = handleChat;
-  chatInput.onkeypress = (e) => { if (e.key === 'Enter') handleChat(); };
-
-  // Init
-  fetch('/api/v1/robot/ping').then(r => { 
-    if(r.ok) { 
-      document.getElementById('connDot').className='dot ok'; 
-      document.getElementById('connLabel').textContent='Connected'; 
-    } 
-  });
-  
-  async function initBrain() {
+  $('btnSendChat').onclick = handleChat;
+  chatInput.onkeypress = e => { if (e.key === 'Enter') handleChat(); };
+  (async function initBrain() {
     try {
       const res = await brainReq('initialize', {
         protocolVersion: '2024-11-05',
         clientInfo: { name: 'gizmo-gui', version: '1.0.0' },
         capabilities: {}
       });
-      if (res.result) {
-        await brainReq('notifications/initialized', {});
-        addChat('Brain online.', false);
-      }
+      if (res.result) { await brainReq('notifications/initialized', {}); addChat('Brain online.', false); }
     } catch (e) { addLog('Brain sync failed', true); }
-  }
-  initBrain();
+  })();
+
   addLog('GUI loaded.');
 })();
 </script>

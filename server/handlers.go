@@ -98,6 +98,9 @@ func makeProxyHandler(targetURLBase string, serverlog *log.Logger) http.HandlerF
 		if s := req.Header.Get("mcp-session-id"); s != "" {
 			proxyReq.Header.Set("mcp-session-id", s)
 		}
+		if tok := req.Header.Get("X-Gizmatron-Control"); tok != "" {
+			proxyReq.Header.Set("X-Gizmatron-Control", tok)
+		}
 
 		proxyResp, err := client.Do(proxyReq)
 		if err != nil {
