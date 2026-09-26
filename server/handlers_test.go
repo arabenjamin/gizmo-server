@@ -51,8 +51,8 @@ func TestMakeProxyHandler_RobotUnreachable(t *testing.T) {
 	if rec.Code != http.StatusBadGateway {
 		t.Fatalf("expected 502, got %d", rec.Code)
 	}
-	if !strings.Contains(rec.Body.String(), "Robot unreachable") {
-		t.Fatalf("expected 'Robot unreachable' in body, got %s", rec.Body.String())
+	if !strings.Contains(rec.Body.String(), "Target unreachable") {
+		t.Fatalf("expected 'Target unreachable' in body, got %s", rec.Body.String())
 	}
 }
 
