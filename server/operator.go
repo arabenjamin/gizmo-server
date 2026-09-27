@@ -54,6 +54,38 @@ type Operator struct {
 	frameTimes []time.Time // recent frame arrivals, for fps
 	detectMs   float64
 	mode       behavior.Mode
+
+	// The GUI polls State every second; cache the robot's control status so
+	// that does not become a request (and a journal line) per second on the Pi.
+	ctlCache   robotapi.Control
+	ctlErr     error
+	ctlFetched time.Time
+}
+
+const controlCacheFor = 3 * time.Second
+
+// robotControl returns the robot's control status, cached briefly.
+func (o *Operator) robotControl(ctx context.Context) (robotapi.Control, error) {
+	o.mu.Lock()
+	if time.Since(o.ctlFetched) < controlCacheFor {
+		c, err := o.ctlCache, o.ctlErr
+		o.mu.Unlock()
+		return c, err
+	}
+	o.mu.Unlock()
+	c, err := o.robot.Control(ctx)
+	o.mu.Lock()
+	o.ctlCache, o.ctlErr, o.ctlFetched = c, err, time.Now()
+	o.mu.Unlock()
+	return c, err
+}
+
+// invalidateControl forces the next State to re-read control from the robot,
+// so the GUI reflects a take/release immediately.
+func (o *Operator) invalidateControl() {
+	o.mu.Lock()
+	o.ctlFetched = time.Time{}
+	o.mu.Unlock()
 }
 
 func NewOperator(robot *robotapi.Client, det *perception.Detector, stream *mjpeg.Stream, lg *log.Logger) *Operator {
@@ -297,7 +329,7 @@ func (o *Operator) Token() string {
 
 // State is the operator's status for the GUI.
 func (o *Operator) State(ctx context.Context) map[string]any {
-	robotControl, ctlErr := o.robot.Control(ctx)
+	robotControl, ctlErr := o.robotControl(ctx)
 	o.mu.Lock()
 	defer o.mu.Unlock()
 	// Count only recent arrivals, so the rate drops to zero when frames stop

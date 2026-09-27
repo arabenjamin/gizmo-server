@@ -35,31 +35,37 @@ type Config struct {
 	// looks up, and image y grows downward.
 	PanSign float64
 
-	Gain         float64       // fraction of the remaining error closed per command
-	DeadbandPx   float64       // hold still when the target is this close to centre
-	MaxStepDeg   float64       // cap per command, so one bad detection cannot lurch
-	FilterAlpha  float64       // EMA weight of a new target estimate
-	StaleAfter   time.Duration // no detection for this long => target lost
-	MinInterval  time.Duration // minimum gap between commands
-	ScanStepDeg  float64
-	ScanInterval time.Duration
-	ScanPanLimit float64
-	ScanBands    []float64 // tilt levels the idle scan sweeps through
+	Gain        float64       // fraction of the remaining error closed per command
+	DeadbandPx  float64       // hold still when the target is this close to centre
+	MaxStepDeg  float64       // cap per command, so one bad detection cannot lurch
+	FilterAlpha float64       // EMA weight of a new target estimate
+	StaleAfter  time.Duration // no detection for this long => target lost
+	// HoldAfterLost keeps the head where the target was last seen before the
+	// idle scan resumes. Detection drops out for a second or two whenever a
+	// face turns or the confidence dips; the person is almost always still
+	// there, and scanning straight away swung the head off them (measured).
+	HoldAfterLost time.Duration
+	MinInterval   time.Duration // minimum gap between commands
+	ScanStepDeg   float64
+	ScanInterval  time.Duration
+	ScanPanLimit  float64
+	ScanBands     []float64 // tilt levels the idle scan sweeps through
 }
 
 var DefaultConfig = Config{
 	FrameW: 640, FrameH: 480,
 	PxPerDegPan: 9.8, PxPerDegTilt: 11.2,
-	PanSign:      -1,
-	Gain:         0.6,
-	DeadbandPx:   25,
-	MaxStepDeg:   8,
-	FilterAlpha:  0.45,
-	StaleAfter:   1500 * time.Millisecond,
-	MinInterval:  100 * time.Millisecond,
-	ScanStepDeg:  5,
-	ScanInterval: 500 * time.Millisecond,
-	ScanPanLimit: 60,
+	PanSign:       -1,
+	Gain:          0.6,
+	DeadbandPx:    25,
+	MaxStepDeg:    8,
+	FilterAlpha:   0.45,
+	StaleAfter:    1500 * time.Millisecond,
+	HoldAfterLost: 4 * time.Second,
+	MinInterval:   100 * time.Millisecond,
+	ScanStepDeg:   5,
+	ScanInterval:  500 * time.Millisecond,
+	ScanPanLimit:  60,
 	// Within ~+/-25 deg of level is where a seated or standing person's head
 	// is; the ~45 deg vertical field of view makes these bands overlap.
 	ScanBands: []float64{0, 12, -12, 24},
@@ -71,6 +77,7 @@ const (
 	ModeIdle     Mode = "idle"
 	ModeTracking Mode = "tracking"
 	ModeScanning Mode = "scanning"
+	ModeHolding  Mode = "holding" // target just lost; waiting before scanning
 )
 
 type Tracker struct {
@@ -153,6 +160,9 @@ func (t *Tracker) Next(now time.Time) (Pose, Mode, bool) {
 		return next, ModeTracking, true
 	}
 
+	if t.Scan && t.holding(now) {
+		return Pose{}, ModeHolding, false
+	}
 	if t.Scan && now.Sub(t.lastScan) >= t.cfg.ScanInterval {
 		pan := t.aim.Pan + t.scanDir*t.cfg.ScanStepDeg
 		// At the end of a sweep, reverse and move to the next tilt band, so the
@@ -180,10 +190,18 @@ func (t *Tracker) Mode(now time.Time) Mode {
 	switch {
 	case t.haveTarget && now.Sub(t.lastSeen) <= t.cfg.StaleAfter:
 		return ModeTracking
+	case t.Scan && t.holding(now):
+		return ModeHolding
 	case t.Scan:
 		return ModeScanning
 	}
 	return ModeIdle
+}
+
+// holding reports whether a target was seen recently enough that the scan
+// should wait rather than move the head away from where it was.
+func (t *Tracker) holding(now time.Time) bool {
+	return !t.lastSeen.IsZero() && now.Sub(t.lastSeen) < t.cfg.HoldAfterLost
 }
 
 func (t *Tracker) step(d float64) float64 {

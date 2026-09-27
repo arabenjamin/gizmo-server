@@ -121,7 +121,11 @@ func TestLostTargetGoesIdleThenScans(t *testing.T) {
 		t.Errorf("lost target without scan: ok=%v mode=%v, want idle", ok, mode)
 	}
 	tr.Scan = true
-	p, mode, ok := tr.Next(later)
+	// Just lost: hold where the target was rather than scanning away from it.
+	if _, mode, ok := tr.Next(later); ok || mode != ModeHolding {
+		t.Errorf("just after losing the target: ok=%v mode=%v, want holding", ok, mode)
+	}
+	p, mode, ok := tr.Next(now.Add(DefaultConfig.HoldAfterLost + time.Second))
 	if !ok || mode != ModeScanning || p.Pan != 5 || p.Tilt != 0 {
 		t.Errorf("scan step: %+v %v %v, want pan 5 tilt 0 scanning", p, mode, ok)
 	}
