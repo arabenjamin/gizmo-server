@@ -31,7 +31,9 @@ func controlHandler(op *Operator) http.HandlerFunc {
 				Force bool `json:"force"`
 			}
 			json.NewDecoder(r.Body).Decode(&body)
-			if err := op.TakeControl(r.Context(), body.Force); err != nil {
+			err := op.TakeControl(r.Context(), body.Force)
+			op.invalidateControl()
+			if err != nil {
 				status := http.StatusBadGateway
 				var held *robotapi.ErrControlHeld
 				if errors.As(err, &held) {
@@ -42,6 +44,7 @@ func controlHandler(op *Operator) http.HandlerFunc {
 			}
 			writeJSON(w, http.StatusOK, op.State(r.Context()))
 		case http.MethodDelete:
+			op.invalidateControl()
 			if err := op.ReleaseControl(r.Context()); err != nil {
 				writeJSON(w, http.StatusBadGateway, map[string]any{"error": err.Error()})
 				return

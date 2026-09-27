@@ -4,6 +4,10 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/arabenjamin/gizmo-server/perception"
 	"github.com/arabenjamin/gizmo-server/robotapi"
@@ -37,8 +41,15 @@ func Start(serverlog *log.Logger, robotURL string, brainURL string) error {
 	if err != nil {
 		return err
 	}
+	// On SIGTERM/SIGINT (docker stop, Ctrl-C) give control back before
+	// exiting. Otherwise the robot keeps our human lease for its idle timeout,
+	// and a restarted gizmo-server -- a different controller as far as the
+	// robot knows -- is locked out until it lapses.
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt)
+	defer stop()
+
 	op := NewOperator(robotapi.New(robotURL), det, stream, serverlog)
-	op.Run(context.Background())
+	op.Run(ctx)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/ping", Chain(ping, logger(serverlog)))
@@ -55,5 +66,20 @@ func Start(serverlog *log.Logger, robotURL string, brainURL string) error {
 	mux.HandleFunc("/", serveGUI)
 
 	serverlog.Printf("Robot: %s  Brain: %s", robotURL, brainURL)
-	return http.ListenAndServe(":9090", mux)
+	srv := &http.Server{Addr: ":9090", Handler: mux}
+	errc := make(chan error, 1)
+	go func() { errc <- srv.ListenAndServe() }()
+
+	select {
+	case err := <-errc:
+		return err
+	case <-ctx.Done():
+	}
+	serverlog.Printf("Shutting down: releasing control of the robot")
+	shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := op.ReleaseControl(shutdown); err != nil {
+		serverlog.Printf("Release on shutdown failed: %v", err)
+	}
+	return srv.Shutdown(shutdown)
 }
