@@ -36,8 +36,10 @@ that failure, and the simulation test in `behavior/tracker_test.go` reproduces i
 Calibration (measured on the robot): 9.8 px per degree of pan, 11.2 px per degree of tilt,
 and pan sign −1 (raising the base moves image content right).
 
-**Aim assumes the arm's start pose.** Tilt is level at joint4 = 130 only with the shoulder
-and elbow in the start pose, so press **Start bot** before tracking.
+Tilt is calibrated with the arm in its start pose. The robot's `look` raises the arm into
+that pose automatically, so tracking works straight from the folded rest pose. After losing a
+face, the tracker holds its aim for 4 s before scanning again, because detection drops out
+briefly whenever a face turns.
 
 ## Layout
 
