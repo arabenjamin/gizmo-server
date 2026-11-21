@@ -1,5 +1,7 @@
 # Gizmo Server
 
+[![Go](https://github.com/arabenjamin/gizmo-server/actions/workflows/go.yml/badge.svg?branch=master)](https://github.com/arabenjamin/gizmo-server/actions/workflows/go.yml)
+
 The operator station for [Gizmatron](https://github.com/arabenjamin/gizmatron). The robot is
 deliberately a "fancy RC car" with no agency of its own; gizmo-server is where the thinking
 happens:
