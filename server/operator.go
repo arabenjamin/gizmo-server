@@ -53,6 +53,8 @@ type Operator struct {
 	faces      []perception.Face
 	frameTimes []time.Time // recent frame arrivals, for fps
 	detectMs   float64
+	framesSeen uint64 // frames run through detection, for /metrics
+	facesSeen  uint64 // faces found, summed over frames
 	mode       behavior.Mode
 
 	// The GUI polls State every second; cache the robot's control status so
@@ -145,6 +147,8 @@ func (o *Operator) onFrame(f robotapi.Frame) {
 	o.connected, o.streamErr = true, ""
 	o.lastFrame = robotapi.Frame{Seq: f.Seq, CapturedAt: f.CapturedAt, Pan: f.Pan, Tilt: f.Tilt, Moving: f.Moving}
 	o.faces, o.detectMs = faces, detectMs
+	o.framesSeen++
+	o.facesSeen += uint64(len(faces))
 	now := time.Now()
 	o.frameTimes = append(o.frameTimes, now)
 	for len(o.frameTimes) > 0 && now.Sub(o.frameTimes[0]) > 2*time.Second {
@@ -328,22 +332,30 @@ func (o *Operator) Token() string {
 }
 
 // State is the operator's status for the GUI.
+// fpsLocked is the frame rate over the last two seconds, for the GUI and
+// /metrics. It counts only recent arrivals, so the rate drops to zero when
+// frames stop (frameTimes is otherwise pruned only when a new frame
+// arrives). o.mu must be held.
+func (o *Operator) fpsLocked(now time.Time) float64 {
+	var recent []time.Time
+	for _, t := range o.frameTimes {
+		if now.Sub(t) <= 2*time.Second {
+			recent = append(recent, t)
+		}
+	}
+	if n := len(recent); n > 1 {
+		if span := recent[n-1].Sub(recent[0]).Seconds(); span > 0 {
+			return float64(n-1) / span
+		}
+	}
+	return 0
+}
+
 func (o *Operator) State(ctx context.Context) map[string]any {
 	robotControl, ctlErr := o.robotControl(ctx)
 	o.mu.Lock()
 	defer o.mu.Unlock()
-	// Count only recent arrivals, so the rate drops to zero when frames stop
-	// (frameTimes is otherwise pruned only when a new frame arrives).
-	var recent []time.Time
-	for _, t := range o.frameTimes {
-		if time.Since(t) <= 2*time.Second {
-			recent = append(recent, t)
-		}
-	}
-	fps := 0.0
-	if n := len(recent); n > 1 {
-		fps = float64(n-1) / recent[n-1].Sub(recent[0]).Seconds()
-	}
+	fps := o.fpsLocked(time.Now())
 	st := map[string]any{
 		"connected":   o.connected,
 		"stream_err":  o.streamErr,

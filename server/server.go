@@ -48,13 +48,18 @@ func Start(serverlog *log.Logger, robotURL string, brainURL string) error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt)
 	defer stop()
 
-	op := NewOperator(robotapi.New(robotURL), det, stream, serverlog)
+	robot := robotapi.New(robotURL)
+	op := NewOperator(robot, det, stream, serverlog)
+	metrics := newMetrics(op)
+	robot.HTTP.Transport = metrics.RobotTransport(robot.HTTP.Transport)
 	op.Run(ctx)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/ping", Chain(ping, logger(serverlog)))
 	mux.HandleFunc("/api/v1/upload", makeUploadHandler(stream))
-	mux.Handle("/api/v1/stream", stream)
+	mux.Handle("/api/v1/stream", metrics.Viewing(stream))
+	// Prometheus scrapes /metrics: open, GET-only.
+	mux.Handle("/metrics", metrics.Handler())
 
 	mux.HandleFunc("/api/v1/state", stateHandler(op))
 	mux.HandleFunc("/api/v1/control", Chain(controlHandler(op), logger(serverlog)))
